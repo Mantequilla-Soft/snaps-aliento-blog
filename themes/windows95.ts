@@ -2,35 +2,36 @@ import { extendTheme } from '@chakra-ui/react';
 import { swiperStyles } from './swiperStyles';
 
 export const windows95Theme = extendTheme({
-    initialColorMode: 'light',
+    initialColorMode: 'dark',
     useSystemColorMode: false,
     colors: {
-        background: '#C0C0C0', // Light gray background
-        text: '#000000', // Black text
-        primary: '#000080', // Navy blue for primary actions
-        secondary: '#008080', // Teal for secondary elements
-        accent: '#800080', // Purple for accents
-        muted: '#D3D3D3', // Light gray for muted elements
-        error: '#FF0000', // Bright red for errors
-        success: '#008000', // Green for success messages
-        warning: '#FFA500', // Orange for warnings
+        background: '#1a2332', // Dark navy background from branding
+        text: '#ffffff', // White text for dark mode
+        primary: '#00a8ff', // Bright cyan blue from logo
+        secondary: '#2563eb', // Medium blue from branding
+        accent: '#06b6d4', // Cyan accent from wings/elements
+        muted: '#2d3748', // Dark gray for muted elements
+        border: '#374151', // Subtle border color
+        error: '#ef4444', // Modern red for errors
+        success: '#10b981', // Modern green for success
+        warning: '#f59e0b', // Modern orange for warnings
     },
     fonts: {
-        heading: '"Tahoma", sans-serif', // Tahoma was commonly used in Windows 95
-        body: '"Tahoma", sans-serif', // Tahoma for body text
-        mono: '"Courier New", monospace', // Monospace for code-like elements
+        heading: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif',
+        body: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif',
+        mono: '"JetBrains Mono", "Fira Code", monospace',
     },
     fontSizes: {
-        xs: '10px',
-        sm: '12px',
-        md: '14px',
-        lg: '16px',
-        xl: '18px',
-        '2xl': '20px',
-        '3xl': '24px',
-        '4xl': '28px',
-        '5xl': '32px',
-        '6xl': '36px',
+        xs: '12px',
+        sm: '14px',
+        md: '16px',
+        lg: '18px',
+        xl: '20px',
+        '2xl': '24px',
+        '3xl': '30px',
+        '4xl': '36px',
+        '5xl': '48px',
+        '6xl': '60px',
     },
     fontWeights: {
         normal: 400,
@@ -47,16 +48,17 @@ export const windows95Theme = extendTheme({
         taller: '2',
     },
     borders: {
-        tb1: '1px solid #A9A9A9', // Solid dark gray border
-        borderRadius: 'full', // Sharp, rectangular corners typical of Windows 95
+        tb1: '1px solid #374151',
+        borderRadius: 'md',
     },
     radii: {
         none: '0',
-        sm: '4px',
-        base: '0px',
+        sm: '6px',
+        base: '8px',
         md: '12px',
         lg: '16px',
-        full: '9999px', // For fully rounded corners
+        xl: '20px',
+        full: '9999px',
     },
     space: {
         px: '1px',
@@ -104,56 +106,70 @@ export const windows95Theme = extendTheme({
         },
     },
     shadows: {
-        xs: '0 0 2px 0 rgba(0, 0, 0, 0.5)',
-        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.5)',
-        base: '0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px 0 rgba(0, 0, 0, 0.3)',
+        xs: '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
+        sm: '0 1px 3px 0 rgba(0, 0, 0, 0.4)',
+        base: '0 2px 4px 0 rgba(0, 0, 0, 0.4)',
         md: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
-        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
-        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
-        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
-        outline: '0 0 0 3px rgba(0, 0, 0, 0.6)',
-        inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.8)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.5)',
+        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+        outline: '0 0 0 3px rgba(0, 168, 255, 0.4)',
+        inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.6)',
         none: 'none',
-        'dark-lg': 'rgba(0, 0, 0, 0.5) 0px 10px 15px -3px, rgba(0, 0, 0, 0.3) 0px 4px 6px -2px',
+        'dark-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4)',
     },
     components: {
         Button: {
             baseStyle: {
-                fontWeight: 'bold',
-                textTransform: 'uppercase',
-                borderRadius: 'none', // No rounded corners, reflecting the boxy style of Windows 95
+                fontWeight: '600',
+                borderRadius: 'md',
+                transition: 'all 0.2s',
             },
             sizes: {
                 sm: {
                     fontSize: 'sm',
                     px: 4,
                     py: 2,
+                    h: '32px',
                 },
                 md: {
                     fontSize: 'md',
                     px: 6,
                     py: 3,
+                    h: '40px',
+                },
+                lg: {
+                    fontSize: 'lg',
+                    px: 8,
+                    py: 4,
+                    h: '48px',
                 },
             },
             variants: {
                 solid: {
                     bg: 'primary',
-                    color: 'background',
+                    color: 'white',
                     _hover: {
                         bg: 'accent',
+                        transform: 'translateY(-1px)',
+                        boxShadow: 'md',
+                    },
+                    _active: {
+                        transform: 'translateY(0)',
                     },
                 },
                 outline: {
                     borderColor: 'primary',
                     color: 'primary',
+                    borderWidth: '2px',
                     _hover: {
-                        bg: 'muted',
+                        bg: 'rgba(0, 168, 255, 0.1)',
                     },
                 },
                 ghost: {
                     color: 'primary',
                     _hover: {
-                        bg: 'muted',
+                        bg: 'rgba(0, 168, 255, 0.1)',
                     },
                 },
             },
@@ -161,10 +177,20 @@ export const windows95Theme = extendTheme({
         Input: {
             baseStyle: {
                 field: {
+                    bg: 'muted',
                     borderColor: 'border',
+                    borderRadius: 'md',
+                    color: 'text',
+                    _hover: {
+                        borderColor: 'primary',
+                    },
                     _focus: {
                         borderColor: 'primary',
                         boxShadow: 'outline',
+                        bg: 'muted',
+                    },
+                    _placeholder: {
+                        color: 'gray.500',
                     },
                 },
             },
@@ -173,13 +199,16 @@ export const windows95Theme = extendTheme({
                     field: {
                         fontSize: 'md',
                         px: 4,
-                        py: 2,
+                        py: 3,
+                        h: '40px',
                     },
                 },
             },
             variants: {
                 outline: {
                     field: {
+                        bg: 'transparent',
+                        borderWidth: '2px',
                         borderColor: 'border',
                         _hover: {
                             borderColor: 'primary',
@@ -193,8 +222,11 @@ export const windows95Theme = extendTheme({
                 filled: {
                     field: {
                         bg: 'muted',
+                        borderWidth: '2px',
+                        borderColor: 'transparent',
                         _hover: {
                             bg: 'muted',
+                            borderColor: 'border',
                         },
                         _focus: {
                             bg: 'muted',
@@ -207,6 +239,36 @@ export const windows95Theme = extendTheme({
         Text: {
             baseStyle: {
                 color: 'text',
+            },
+        },
+        Modal: {
+            baseStyle: {
+                dialog: {
+                    bg: 'background',
+                    color: 'text',
+                    borderRadius: 'lg',
+                    boxShadow: 'xl',
+                    border: '1px solid',
+                    borderColor: 'border',
+                },
+                header: {
+                    color: 'text',
+                    fontWeight: 'bold',
+                    fontSize: 'xl',
+                    pb: 4,
+                    borderBottom: '1px solid',
+                    borderColor: 'border',
+                },
+                closeButton: {
+                    color: 'text',
+                    _hover: {
+                        bg: 'muted',
+                    },
+                },
+                body: {
+                    color: 'text',
+                    py: 6,
+                },
             },
         },
     },

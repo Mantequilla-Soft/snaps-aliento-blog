@@ -27,6 +27,7 @@ const themeMap = {
   hacker: hackerTheme,
   nounish: nounsDaoTheme,
   windows95: windows95Theme,
+  snapie: windows95Theme,
   hivebr: hiveBRTheme,
   cannabis: cannabisTheme,
   mengao: mengaoTheme,
