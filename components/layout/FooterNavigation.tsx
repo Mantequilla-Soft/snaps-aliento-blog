@@ -42,6 +42,7 @@ export default function FooterNavigation() {
                         variant="ghost"
                         leftIcon={<Icon as={FiCreditCard} boxSize={5} />}
                         _hover={{ bg: "muted" }}
+                        isDisabled={!user}
                     />
                 </Tooltip>
 
@@ -58,6 +59,7 @@ export default function FooterNavigation() {
                         onClick={() => handleNavigation("/@" + user + "/notifications")}
                         variant="ghost"
                         leftIcon={<Icon as={FiBell} boxSize={4} />}
+                        isDisabled={!user}
                     />
                 </Tooltip>
 
@@ -66,6 +68,7 @@ export default function FooterNavigation() {
                         onClick={() => handleNavigation("/@" + user)}
                         variant="ghost"
                         leftIcon={<Icon as={FiUser} boxSize={4} />}
+                        isDisabled={!user}
                     />
                 </Tooltip>
             </HStack>
