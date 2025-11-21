@@ -17,8 +17,10 @@ export const separateContent = (body: string) => {
   const lines = body.split("\n");
   
   lines.forEach((line: string) => {
-    // Check if line contains markdown image or iframe
-    if (line.match(/!\[.*?\]\(.*\)/) || line.match(/<iframe.*<\/iframe>/)) {
+    // Check if line contains markdown image, iframe, or 3Speak embed URL
+    if (line.match(/!\[.*?\]\(.*\)/) || 
+        line.match(/<iframe.*<\/iframe>/) ||
+        line.match(/https?:\/\/play\.3speak\.tv\/embed\?v=/)) {
       mediaParts.push(line);
     } else {
       textParts.push(line);
@@ -175,6 +177,24 @@ export const parseMediaContent = (mediaContent: string): MediaItem[] => {
     const trimmedItem = item.trim();
     if (!trimmedItem) return;
 
+    // Handle plain 3Speak URLs (not in markdown or iframe)
+    if (trimmedItem.includes('play.3speak.tv/embed?v=') && !trimmedItem.includes('<iframe') && !trimmedItem.includes('![')) {
+      const urlMatch = trimmedItem.match(/(https?:\/\/play\.3speak\.tv\/embed\?v=[^\s<>"']+)/);
+      if (urlMatch && urlMatch[1]) {
+        let embedUrl = urlMatch[1];
+        // Add mode=iframe for clean player display
+        if (!embedUrl.includes('mode=iframe')) {
+          embedUrl += '&mode=iframe';
+        }
+        mediaItems.push({
+          type: "iframe",
+          content: `<iframe src="${embedUrl}" width="100%" style="aspect-ratio: 16/9;" frameborder="0" allowfullscreen></iframe>`,
+          src: embedUrl,
+        });
+        return;
+      }
+    }
+
     // Handle markdown images/videos with any IPFS gateway
     if (trimmedItem.includes("![") && trimmedItem.includes("http")) {
       // Extract ALL image markdown patterns from the line (there might be multiple or text before/after)
@@ -249,7 +269,12 @@ export const parseMediaContent = (mediaContent: string): MediaItem[] => {
     if (trimmedItem.includes("<iframe") && trimmedItem.includes("</iframe>")) {
       const srcMatch = trimmedItem.match(/src=["']([^"']+)["']/i);
       if (srcMatch && srcMatch[1]) {
-        const url = srcMatch[1];
+        let url = srcMatch[1];
+        
+        // Add mode=iframe to 3Speak URLs if not present
+        if (url.includes('play.3speak.tv/embed?v=') && !url.includes('mode=iframe')) {
+          url += '&mode=iframe';
+        }
 
         // Skip YouTube iframes (handled by auto-embed logic)
         if (
