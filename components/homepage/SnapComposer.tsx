@@ -37,6 +37,7 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
     const buttonText = post ? "Reply" : "Post";
     const hasMedia = images.length > 0 || selectedGif !== null;
     const hasVideo = selectedVideo !== null;
+    const isDisabled = !user || isLoading;
 
     // Function to extract hashtags from text
     function extractHashtags(text: string): string[] {
@@ -264,32 +265,32 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
     return (
         <Box bg="muted" p={4} mb={1} borderRadius="base" border="tb1">
             <Textarea
-                placeholder="What's happening?"
+                placeholder={!user ? "Please log in to post..." : "What's happening?"}
                 bg="background"
                 border="tb1"
                 borderRadius={'base'}
                 mb={3}
                 ref={postBodyRef}
                 _placeholder={{ color: 'text' }}
-                isDisabled={isLoading}
+                isDisabled={isDisabled}
                 onKeyDown={handleKeyDown} // Attach the keydown handler
             />
             <HStack justify="space-between" mb={3}>
                 <HStack>
-                    <Button _hover={{ border: 'tb1' }} _active={{ border: 'tb1' }} as="label" variant="ghost" isDisabled={isLoading || hasVideo}>
+                    <Button _hover={{ border: 'tb1' }} _active={{ border: 'tb1' }} as="label" variant="ghost" isDisabled={isDisabled || hasVideo}>
                         <FaImage size={22} />
                         <ImageUploader images={images} onUpload={setImages} onRemove={(index) => setImages(prevImages => prevImages.filter((_, i) => i !== index))} />
                     </Button>
-                    <Button _hover={{ border: 'tb1' }} _active={{ border: 'tb1' }} variant="ghost" onClick={() => setGiphyModalOpen(!isGiphyModalOpen)} isDisabled={isLoading || hasVideo}>
+                    <Button _hover={{ border: 'tb1' }} _active={{ border: 'tb1' }} variant="ghost" onClick={() => setGiphyModalOpen(!isGiphyModalOpen)} isDisabled={isDisabled || hasVideo}>
                         <MdGif size={48} />
                     </Button>
-                    <Button _hover={{ border: 'tb1' }} _active={{ border: 'tb1' }} as="label" variant="ghost" isDisabled={isLoading || hasMedia || videoUploadProgress > 0}>
+                    <Button _hover={{ border: 'tb1' }} _active={{ border: 'tb1' }} as="label" variant="ghost" isDisabled={isDisabled || hasMedia || videoUploadProgress > 0}>
                         <FaVideo size={22} />
                         <VideoUploader onUpload={handleVideoSelection} />
                     </Button>
                 </HStack>
-                <Button variant="solid" colorScheme="primary" onClick={handleComment} isDisabled={isLoading || Boolean(selectedVideo && !videoEmbedUrl)}>
-                    {isLoading ? <Spinner size="sm" /> : buttonText}
+                <Button variant="solid" colorScheme="primary" onClick={handleComment} isDisabled={isDisabled || Boolean(selectedVideo && !videoEmbedUrl)}>
+                    {isLoading ? <Spinner size="sm" /> : (!user ? "Log in to post" : buttonText)}
                 </Button>
             </HStack>
             <Wrap spacing={4}>
