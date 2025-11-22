@@ -30,6 +30,7 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
     const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
     const [videoUploadProgress, setVideoUploadProgress] = useState<number>(0);
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
+    const [thumbnailProcessing, setThumbnailProcessing] = useState<boolean>(false);
     const [isGiphyModalOpen, setGiphyModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number[]>([]);
@@ -44,6 +45,155 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
         const hashtagRegex = /#(\w+)/g;
         const matches = text.match(hashtagRegex) || [];
         return matches.map(hashtag => hashtag.slice(1)); // Remove the '#' symbol
+    }
+
+    // Extract thumbnail from video file
+    async function extractThumbnail(file: File): Promise<Blob> {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const video = document.createElement('video');
+
+            video.src = url;
+            video.crossOrigin = 'anonymous';
+            video.muted = true; // Safe autoplay on mobile
+
+            video.addEventListener('loadeddata', () => {
+                // Seek to 0.5 seconds for a good thumbnail frame
+                video.currentTime = 0.5;
+            });
+
+            video.addEventListener('seeked', () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Failed to get canvas context'));
+                    return;
+                }
+                
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('Failed to create thumbnail blob'));
+                        }
+                        URL.revokeObjectURL(url);
+                    },
+                    'image/jpeg',
+                    0.9
+                );
+            });
+
+            video.addEventListener('error', (e) => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Failed to load video'));
+            });
+
+            // Load the video
+            video.load();
+        });
+    }
+
+    // Upload thumbnail directly to 3Speak IPFS supernode (bulletproof!)
+    async function uploadThumbnailToIPFS(thumbnailBlob: Blob): Promise<string> {
+        const formData = new FormData();
+        formData.append('file', thumbnailBlob);
+        
+        const response = await fetch('http://65.21.201.94:5002/api/v0/add', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`IPFS upload failed: ${response.status} - ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        
+        // IPFS returns NDJSON (newline-delimited JSON)
+        const lines = responseText.trim().split('\n');
+        const lastLine = lines[lines.length - 1];
+        const result = JSON.parse(lastLine);
+        
+        const ipfsHash = result.Hash;
+        const ipfsUrl = `https://ipfs.3speak.tv/ipfs/${ipfsHash}`;
+        
+        return ipfsUrl;
+    }
+
+    // Extract and upload thumbnail
+    async function extractAndUploadThumbnail(file: File): Promise<string> {
+        console.log('🎯 Starting thumbnail extraction for:', file.name);
+        
+        try {
+            const thumbnailBlob = await extractThumbnail(file);
+            console.log('📸 Thumbnail extracted, size:', thumbnailBlob.size, 'bytes');
+            
+            // Try Hive first, fallback to Imgur
+            try {
+                const thumbnailFile = new File([thumbnailBlob], `${file.name}_thumbnail.jpg`, { 
+                    type: 'image/jpeg' 
+                });
+                
+                console.log('📝 Trying Hive image upload...');
+                const signature = await getFileSignature(thumbnailFile);
+                const imageUrl = await uploadImage(thumbnailFile, signature);
+                console.log('✅ Thumbnail uploaded to Hive:', imageUrl);
+                return imageUrl;
+            } catch (hiveError) {
+                console.log('⚠️ Hive upload failed, trying 3Speak IPFS fallback...');
+                const ipfsUrl = await uploadThumbnailToIPFS(thumbnailBlob);
+                console.log('✅ Thumbnail uploaded to 3Speak IPFS:', ipfsUrl);
+                return ipfsUrl;
+            }
+        } catch (error) {
+            console.error('❌ Thumbnail processing failed:', error);
+            throw error;
+        }
+    }
+
+    // Extract video ID from embed URL (just the permlink part)
+    function extractVideoId(embedUrl: string): string | null {
+        try {
+            const url = new URL(embedUrl);
+            const videoParam = url.searchParams.get('v'); // Gets "meno/i2znmy5h"
+            if (videoParam) {
+                const parts = videoParam.split('/');
+                return parts[1]; // Return just "i2znmy5h" (the permlink)
+            }
+            return null;
+        } catch (error) {
+            console.error('Failed to extract video ID:', error);
+            return null;
+        }
+    }
+
+    // Set thumbnail for 3Speak video
+    async function setVideoThumbnail(videoId: string, thumbnailUrl: string): Promise<void> {
+        const apiKey = process.env.NEXT_PUBLIC_3SPEAK_API_KEY || '';
+        if (!apiKey) {
+            throw new Error('3Speak API key not configured');
+        }
+
+        const response = await fetch(`https://embed.3speak.tv/video/${videoId}/thumbnail`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            },
+            body: JSON.stringify({
+                thumbnail_url: thumbnailUrl
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to set thumbnail: ${response.status} - ${response.statusText}`);
+        }
     }
 
     // Upload video to 3Speak using TUS protocol
@@ -102,15 +252,55 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
     async function handleVideoSelection(file: File) {
         setSelectedVideo(file);
         setVideoUploadProgress(1); // Show it's starting
+        setThumbnailProcessing(true);
+        
+        console.log('🎬 Starting video upload and thumbnail processing for:', file.name);
         
         try {
-            const embedUrl = await uploadVideoToThreeSpeak(file);
-            setVideoEmbedUrl(embedUrl);
+            // Run video upload and thumbnail processing in parallel
+            console.log('📤 Starting parallel operations...');
+            const [videoResult, thumbnailResult] = await Promise.allSettled([
+                uploadVideoToThreeSpeak(file),
+                extractAndUploadThumbnail(file)
+            ]);
+
+            console.log('📋 Results:', { 
+                video: videoResult.status, 
+                thumbnail: thumbnailResult.status 
+            });
+
+            if (videoResult.status === 'fulfilled') {
+                setVideoEmbedUrl(videoResult.value);
+                console.log('✅ Video uploaded successfully:', videoResult.value);
+                
+                // If thumbnail also succeeded, set it via 3Speak API
+                if (thumbnailResult.status === 'fulfilled') {
+                    console.log('🖼️ Thumbnail uploaded successfully:', thumbnailResult.value);
+                    try {
+                        const videoId = extractVideoId(videoResult.value);
+                        console.log('🆔 Extracted video ID:', videoId);
+                        if (videoId) {
+                            await setVideoThumbnail(videoId, thumbnailResult.value);
+                            console.log('✅ Thumbnail set successfully via 3Speak API');
+                        } else {
+                            console.error('❌ Could not extract video ID from:', videoResult.value);
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ Failed to set thumbnail (video still works):', error);
+                    }
+                } else {
+                    console.warn('⚠️ Thumbnail processing failed (video still works):', thumbnailResult.reason);
+                }
+            } else {
+                throw videoResult.reason;
+            }
         } catch (error) {
-            console.error('Video upload failed:', error);
+            console.error('❌ Video upload failed:', error);
             alert('Failed to upload video. Please try again.');
             setSelectedVideo(null);
             setVideoUploadProgress(0);
+        } finally {
+            setThumbnailProcessing(false);
         }
     }
 
@@ -234,6 +424,7 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
                     setSelectedVideo(null);
                     setVideoEmbedUrl(null);
                     setVideoUploadProgress(0);
+                    setThumbnailProcessing(false);
 
                     const newComment: Partial<Comment> = {
                         author: user, 
@@ -349,6 +540,9 @@ export default function SnapComposer ({ pa, pp, onNewComment, post = false, onCl
                                 <Box w="100%">
                                     <Progress value={videoUploadProgress} size="sm" colorScheme="blue" />
                                     <Text fontSize="xs" mt={1} color="text">{videoUploadProgress}% uploaded</Text>
+                                    {thumbnailProcessing && (
+                                        <Text fontSize="xs" color="blue.400">Generating thumbnail...</Text>
+                                    )}
                                 </Box>
                             )}
                         </VStack>
