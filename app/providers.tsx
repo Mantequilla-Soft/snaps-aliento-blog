@@ -41,8 +41,29 @@ const selectedTheme = themeMap[themeName];
 // Persistent across renders + strict mode remounts
 let hasAttachedPlayerListener = false;
 
-// WeakSet survives React re-renders and tracks actual DOM elements
+// WeakSet tracks which iframes have been styled
 const styledIframes = new WeakSet<HTMLIFrameElement>();
+
+// WeakMap caches window→iframe mapping to avoid repeated searches
+const iframeBySource = new WeakMap<Window, HTMLIFrameElement>();
+
+// Helper function to style an iframe based on orientation
+function styleIframe(iframe: HTMLIFrameElement, data: any) {
+  const isVertical = data.isVertical;
+  
+  iframe.style.margin = '0 auto';
+  iframe.style.maxWidth = isVertical ? '450px' : '800px';
+  iframe.style.height = isVertical ? '800px' : '450px';
+  
+  iframe.parentElement?.classList.add(
+    isVertical ? 'vertical-video' : 'horizontal-video'
+  );
+  
+  // Only log in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📹 3Speak video:', isVertical ? 'vertical' : 'horizontal');
+  }
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -65,50 +86,47 @@ export function Providers({ children }: { children: React.ReactNode }) {
       // Check if message is from 3speak player
       if (event.data?.type !== '3speak-player-ready') return;
       
-      // Find all 3speak iframes and match by src
+      // Check if we've already mapped this event source to an iframe
+      const linkedIframe = iframeBySource.get(event.source as Window);
+      
+      if (linkedIframe) {
+        // Already matched this window → iframe pair, style once only
+        if (!styledIframes.has(linkedIframe)) {
+          styleIframe(linkedIframe, event.data);
+          styledIframes.add(linkedIframe);
+        }
+        return; // Done - no need to search through all iframes
+      }
+      
+      // First time seeing this event source - find matching iframe
       const iframes = document.querySelectorAll<HTMLIFrameElement>(
         'iframe[src*="play.3speak.tv"]'
       );
       
       iframes.forEach((iframe) => {
-        // Skip if already styled (WeakSet check)
-        if (styledIframes.has(iframe)) return;
-        
-        // Check if this iframe's contentWindow matches the event source
         try {
-          if (iframe.contentWindow !== event.source) return;
+          if (iframe.contentWindow === event.source) {
+            // Cache this window → iframe mapping
+            iframeBySource.set(event.source as Window, iframe);
+            
+            // Style if not already styled
+            if (!styledIframes.has(iframe)) {
+              styleIframe(iframe, event.data);
+              styledIframes.add(iframe);
+            }
+          }
         } catch {
-          return;
+          // Cross-origin check failed, skip
         }
-        
-        console.log('📹 3Speak video loaded:', event.data);
-        
-        const isVertical = event.data.isVertical;
-        
-        // Apply responsive dimensions
-        iframe.style.margin = '0 auto';
-        iframe.style.maxWidth = isVertical ? '450px' : '800px';
-        iframe.style.height = isVertical ? '800px' : '450px';
-        
-        iframe.parentElement?.classList.add(
-          isVertical ? 'vertical-video' : 'horizontal-video'
-        );
-        
-        // Mark iframe as styled
-        styledIframes.add(iframe);
-        
-        console.log(
-          isVertical
-            ? '📱 Applied vertical video styling'
-            : '🖥️ Applied horizontal video styling'
-        );
       });
     };
 
     window.addEventListener('message', handleVideoOrientation);
     hasAttachedPlayerListener = true;
     
-    console.log('🎯 Attached SINGLE 3Speak listener');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 Attached 3Speak orientation listener');
+    }
   }, []);
 
   return (
