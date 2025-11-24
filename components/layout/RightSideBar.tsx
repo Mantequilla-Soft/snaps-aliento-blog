@@ -2,26 +2,27 @@
 import { Box, Spinner } from '@chakra-ui/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Discussion } from '@hiveio/dhive';
-import { findPosts } from '@/lib/hive/client-functions';
+import { findPosts, getCommunityMutedAccounts } from '@/lib/hive/client-functions';
 import PostInfiniteScroll from '@/components/blog/PostInfiniteScroll';
 
 export default function RightSideBar() {
   const [query, setQuery] = useState('created');
   const [allPosts, setAllPosts] = useState<Discussion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null); // Reference for the sidebar
+  const [mutedLoaded, setMutedLoaded] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const isFetching = useRef(false);
+  const mutedAccountsRef = useRef<string[]>([]);
 
   const tag = process.env.NEXT_PUBLIC_HIVE_SEARCH_TAG
+  const communityTag = process.env.NEXT_PUBLIC_HIVE_COMMUNITY_TAG
 
-  const params = useRef([
-    {
-      tag: tag,
-      limit: 8,
-      start_author: '',
-      start_permlink: '',
-    },
-  ]);
+  const params = useRef({
+    tag: tag,
+    limit: 8,
+    start_author: '',
+    start_permlink: '',
+  });
 
   const fetchPosts = useCallback(async () => {
     if (isFetching.current) return; // Prevent multiple fetches
@@ -29,15 +30,24 @@ export default function RightSideBar() {
     setIsLoading(true); // Set loading state
     try {
       const posts = await findPosts(query, params.current);
-      setAllPosts((prevPosts) => [...prevPosts, ...posts]);
-      params.current = [
-        {
-          tag: tag,
-          limit: 8,
-          start_author: posts[posts.length - 1]?.author,
-          start_permlink: posts[posts.length - 1]?.permlink,
-        },
-      ];
+      
+      // Filter out comments and muted accounts
+      const topLevelPosts = posts.filter((post: Discussion) => {
+        const isTopLevel = post.parent_author === '';
+        const isMuted = mutedAccountsRef.current.includes(post.author);
+        return isTopLevel && !isMuted;
+      });
+      
+      setAllPosts((prevPosts) => [...prevPosts, ...topLevelPosts]);
+      
+      // Use last visible post for pagination (or fall back to last fetched post)
+      const lastVisible = topLevelPosts[topLevelPosts.length - 1] ?? posts[posts.length - 1];
+      params.current = {
+        tag: tag,
+        limit: 8,
+        start_author: lastVisible?.author || '',
+        start_permlink: lastVisible?.permlink || '',
+      };
     } catch (error) {
       console.log(error);
     } finally {
@@ -46,9 +56,24 @@ export default function RightSideBar() {
     }
   }, [query, tag]);
 
+  // Fetch community muted accounts on mount
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    const fetchMutedAccounts = async () => {
+      if (communityTag) {
+        const muted = await getCommunityMutedAccounts(communityTag);
+        mutedAccountsRef.current = muted;
+        setMutedLoaded(true);
+      }
+    };
+    fetchMutedAccounts();
+  }, [communityTag]);
+
+  // Only fetch posts after muted accounts are loaded
+  useEffect(() => {
+    if (mutedLoaded) {
+      fetchPosts();
+    }
+  }, [mutedLoaded, fetchPosts]);
 
   // Scroll event handler
   const handleScroll = useCallback(() => {

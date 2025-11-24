@@ -435,9 +435,9 @@ export async function getCommunityInfo (username: string) {
   return profile
 }
 
-export async function findPosts(query: string, params: any[]) {
+export async function findPosts(query: string, params: any) {
       const by = 'get_discussions_by_' + query;
-      const posts = await HiveClient.database.call(by, params);
+      const posts = await HiveClient.database.call(by, [params]);
   return posts
 }
 
@@ -488,6 +488,34 @@ export async function getRelationshipBetweenAccounts(
       ignores: false,
       blacklists: false,
     };
+  }
+}
+
+/**
+ * Get community muted accounts list
+ * @param community - The community name (e.g., 'hive-178315')
+ * @returns Promise<string[]> - Array of muted account usernames
+ */
+export async function getCommunityMutedAccounts(community: string): Promise<string[]> {
+  try {
+    const result = await HiveClient.call('bridge', 'list_community_roles', {
+      community,
+      limit: 1000
+    });
+    
+    if (result && Array.isArray(result)) {
+      // Each item is [account, role, title] tuple
+      // Filter for muted role and extract account names
+      const mutedAccounts = result
+        .filter((r: any) => r[1] === 'muted')
+        .map((r: any) => r[0]);
+      
+      return mutedAccounts;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching community muted accounts:', error);
+    return [];
   }
 }
 
