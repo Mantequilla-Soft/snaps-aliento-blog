@@ -7,6 +7,21 @@ export interface MediaItem {
 }
 
 /**
+ * Add noscroll parameter to 3Speak URLs to prevent scrollbars in iframe
+ */
+function fix3SpeakUrl(url: string): string {
+  if (!url.includes('play.3speak.tv/embed')) return url;
+  
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('noscroll', '1');
+    return urlObj.toString();
+  } catch {
+    return url + (url.includes('?') ? '&' : '?') + 'noscroll=1';
+  }
+}
+
+/**
  * Separate content into media and text parts
  * This is the foundation of SkateHive's media/text separation pattern
  */
@@ -186,6 +201,8 @@ export const parseMediaContent = (mediaContent: string): MediaItem[] => {
         if (!embedUrl.includes('mode=iframe')) {
           embedUrl += '&mode=iframe';
         }
+        // Add noscroll parameter to prevent scrollbars
+        embedUrl = fix3SpeakUrl(embedUrl);
         mediaItems.push({
           type: "iframe",
           content: `<iframe src="${embedUrl}" width="100%" style="aspect-ratio: 16/9;" frameborder="0" allowfullscreen></iframe>`,
@@ -274,6 +291,11 @@ export const parseMediaContent = (mediaContent: string): MediaItem[] => {
         // Add mode=iframe to 3Speak URLs if not present
         if (url.includes('play.3speak.tv/embed?v=') && !url.includes('mode=iframe')) {
           url += '&mode=iframe';
+        }
+        
+        // Add noscroll parameter to 3Speak URLs
+        if (url.includes('play.3speak.tv/embed')) {
+          url = fix3SpeakUrl(url);
         }
 
         // Skip YouTube iframes (handled by auto-embed logic)

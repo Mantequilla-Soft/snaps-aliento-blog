@@ -63,10 +63,12 @@ function styleIframe(iframe: HTMLIFrameElement, data: any) {
     iframe.style.aspectRatio = '9 / 16';
     iframe.style.display = 'block';
     iframe.style.margin = '0 auto';
+    iframe.style.overflow = 'hidden';
     
     parent.style.display = 'flex';
     parent.style.justifyContent = 'center';
     parent.style.width = '100%';
+    parent.style.overflow = 'hidden';
   } else {
     // Horizontal videos: use padding trick
     iframe.style.position = 'absolute';
@@ -74,12 +76,14 @@ function styleIframe(iframe: HTMLIFrameElement, data: any) {
     iframe.style.left = '0';
     iframe.style.width = '100%';
     iframe.style.height = '100%';
+    iframe.style.overflow = 'hidden';
     
     parent.style.position = 'relative';
     parent.style.width = '100%';
     parent.style.maxWidth = '800px';
     parent.style.margin = '0 auto';
     parent.style.paddingBottom = '56.25%'; // 16:9 ratio
+    parent.style.overflow = 'hidden';
   }
   
   parent.classList.add(isVertical ? 'vertical-video' : 'horizontal-video');
