@@ -160,10 +160,12 @@ const Snap = memo(({ comment, onOpen, setReply, setConversation, level = 0 }: Sn
                 {/* Render media separately using MediaRenderer */}
                 {media && <MediaRenderer mediaContent={media} />}
                 
-                {/* Render text content with proper markdown processing */}
+                {/* Render text content with proper markdown processing - clickable to open full post */}
                 {renderedText && (
                     <Box 
                         dangerouslySetInnerHTML={{ __html: renderedText }}
+                        onClick={setConversation ? handleConversation : undefined}
+                        cursor={setConversation ? "pointer" : "default"}
                         sx={{
                             "& p": { marginBottom: 2 },
                             "& a": { 
@@ -217,14 +219,15 @@ const Snap = memo(({ comment, onOpen, setReply, setConversation, level = 0 }: Sn
                         {comment.active_votes?.length}
                     </Button>
                     <HStack spacing={4}>
-                        <HStack spacing={1} cursor="pointer" onClick={handleReplyModal}>
-                            <FaRegComment />
-                            {setConversation && (
+                        {/* Reply button - opens full post view to see/write comments */}
+                        {setConversation && (
+                            <HStack spacing={1} cursor="pointer" onClick={handleConversation}>
+                                <FaRegComment />
                                 <Text fontWeight="bold">
                                     {comment.children}
                                 </Text>
-                            )}
-                        </HStack>
+                            </HStack>
+                        )}
                         {canEdit && (
                             <HStack spacing={1} cursor="pointer" onClick={() => setIsEditModalOpen(true)}>
                                 <FaEdit />
