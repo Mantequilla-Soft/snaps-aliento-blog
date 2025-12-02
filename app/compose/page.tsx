@@ -100,7 +100,7 @@ export default function Home() {
       const imageArray = prepareImageArray(markdown)
       
       // Create comment operation (Keychain needs author field)
-      const commentOp = [
+      const commentOp: [string, any] = [
         'comment',
         {
           parent_author: '',
@@ -118,7 +118,11 @@ export default function Home() {
       ];
 
       // Create comment_options operation with beneficiaries
-      const optionsOp = [
+      const sortedBeneficiaries = beneficiaries
+        .sort((a, b) => a.account.localeCompare(b.account))
+        .map(b => ({ account: b.account, weight: b.weight }));
+
+      const optionsOp: [string, any] = [
         'comment_options',
         {
           author: username,
@@ -131,14 +135,12 @@ export default function Home() {
             [
               0,
               {
-                beneficiaries: beneficiaries
-                  .sort((a, b) => a.account.localeCompare(b.account)) // Hive requires sorted by account name
-                  .map(b => ({ account: b.account, weight: b.weight }))
+                beneficiaries: sortedBeneficiaries
               }
             ]
           ]
         }
-      ] as const;
+      ];
 
       // Submit to Hive blockchain using Keychain directly
       console.log('📤 Submitting to Hive via Keychain:', { 
