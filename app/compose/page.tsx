@@ -4,6 +4,7 @@ import { KeyTypes } from '@aioha/aioha'
 import { Flex, Input, Tag, TagCloseButton, TagLabel, Wrap, WrapItem, Button, useToast } from '@chakra-ui/react'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { generatePermlink, prepareImageArray, validateTitle, validateContent } from '@/lib/utils/composeUtils'
 import type { Beneficiary } from '@/components/compose/BeneficiariesInput'
 
@@ -19,6 +20,7 @@ export default function Home() {
 
   const { aioha, user } = useAioha()
   const toast = useToast()
+  const router = useRouter()
   const communityTag = process.env.NEXT_PUBLIC_HIVE_COMMUNITY_TAG || 'blog'
 
   const handleHashtagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -170,10 +172,10 @@ export default function Home() {
         setHashtagInput('')
         setBeneficiaries([{ account: 'snapie', weight: 300 }]) // Reset to default
 
-        // Redirect to post after short delay
+        // Redirect to post after delay (allow Hive node propagation)
         setTimeout(() => {
-          window.location.href = `/@${username}/${permlink}`
-        }, 1500)
+          router.push(`/@${username}/${permlink}`)
+        }, 3000)
       } else {
         throw new Error((result as any).errorMessage || (result as any).error || 'Failed to publish post')
       }
