@@ -159,8 +159,9 @@ export const extractHivePostUrls = (content: string): Array<{ url: string; autho
   const frontendsPattern = hiveFrontends.map(domain => domain.replace('.', '\\.')).join('|');
   
   // Match Hive post URLs: https://frontend.com/category/@author/permlink or https://frontend.com/@author/permlink
+  // Also handles www. subdomain
   const hiveUrlRegex = new RegExp(
-    `https?:\\/\\/(${frontendsPattern})\\/((?:[^/\\s]+\\/)?@([a-z0-9.-]+)\\/([a-z0-9-]+))`,
+    `https?:\\/\\/(?:www\\.)?(${frontendsPattern})\\/((?:[^/\\s]+\\/)?@([a-z0-9.-]+)\\/([a-z0-9-]+))`,
     'gi'
   );
   

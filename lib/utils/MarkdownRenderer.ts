@@ -101,8 +101,9 @@ function convertHiveUrlsToInternal(content: string): string {
     const frontendsPattern = hiveFrontends.map(domain => domain.replace('.', '\\.')).join('|');
     
     // Match Hive post URLs: https://frontend.com/category/@author/permlink or https://frontend.com/@author/permlink
+    // Also handles www. subdomain
     const hiveUrlRegex = new RegExp(
-        `<a href="https?:\\/\\/(${frontendsPattern})\\/((?:[^/]+\\/)?@([a-z0-9.-]+)\\/([a-z0-9-]+))"([^>]*)>`,
+        `<a href="https?:\\/\\/(?:www\\.)?(${frontendsPattern})\\/((?:[^/]+\\/)?@([a-z0-9.-]+)\\/([a-z0-9-]+))"([^>]*)>`,
         'gi'
     );
     
